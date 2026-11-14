@@ -46,15 +46,13 @@ class UserMessage {
             return
         }
         
-        console.log(newFiles)
         let formData = new FormData()
         formData.append('message', newText)
         formData.append('role', "user")
         if (newFiles)
             newFiles.forEach(file => {
-                formData.append('files', file); // тут можна змінити ключ, якщо потрібно
+                formData.append('files', file);
             });
-            console.log(formData)
 
         try {
             const response = await fetch(`http://127.0.0.1:5000/api/chat/edit/${this.id}?branch=${branch}`, {
@@ -218,7 +216,7 @@ async function requestAi(formData){
             //Check id
             if (ai_response.id === undefined)
             {
-                console.log("This message doesn`t have an id! It can`t be edited")
+                console.log("This message doesn't have an id! It can't be edited")
                 return
             }
 
@@ -259,9 +257,6 @@ async function requestAi(formData){
                         text_field.disabled = true;
                         await ai_response.edit(text_field.value);
                     }
-                    else if (event.key === 'Escape'){
-                        console.log(ai_response)
-                    }
                     
                     textBox.innerHTML = marked.parse(ai_response.rawText)
                     ai_response.text = marked.parse(ai_response.rawText)
@@ -281,7 +276,7 @@ async function requestAi(formData){
             editEvents.dispatchEvent(new CustomEvent('stopEdit', {detail: {obj: undefined}}))
             if (ai_response.id === undefined)
             {
-                console.log("This message doesn`t have an id! It can`t be edited")
+                console.log("This message doesn't have an id! It can't be edited")
                 return
             }
             let response = await fetch(`http://127.0.0.1:5000/api/chat/reroll/${ai_response.id}`, {
@@ -366,7 +361,6 @@ async function sendMessage() {
     let messageFileContainer = messageBox.querySelector(".message-file-container")
     let messageFileWrapper = messageFileContainer.querySelector(".message-file-wrapper")
 
-    console.log()
     textBox.append(text)
     chatWindow.append(messageBox) 
     userInput.value = ''; // Очищаємо поле введення
@@ -446,15 +440,13 @@ async function sendMessage() {
                         element.style.display === 'flex'
                     }
                     else{
-                        console.log(currentMessage.files.includes(element.savedFile))
-                        console.log(currentMessage.files, element.savedFile)
                         let button = element.querySelector('.remove-file-btn')
                         button.removeEventListener('click', removeFile)
                         element.remove();
                     }
                 });
 
-                if (!Array.from(messageFileContainer.children).some(node => { console.log(node.style.display !== "none", node); return node.style.display !== "none"})) {
+                if (!Array.from(messageFileContainer.children).some(node => node.style.display !== "none")) {
                     messageContainer.style.paddingTop = "0"
                     messageFileContainer.style.display = 'none'
                 }
@@ -467,7 +459,7 @@ async function sendMessage() {
             const button = event.currentTarget;
             const element = button.closest('.file');
             element.style.display = 'none'
-            if (!Array.from(element.parentElement.children).some(node => { console.log(node.style.display !== "none", node); return node.style.display !== "none"})) {
+            if (!Array.from(element.parentElement.children).some(node => node.style.display !== "none")) {
                 messageContainer.style.paddingTop = "0"
                 messageFileContainer.style.display = 'none'
             }
@@ -541,11 +533,8 @@ async function sendMessage() {
                     });
 
                     filesToAdd.forEach(file => {newFiles.push(file)});
-                    console.log(newFiles)
                     let newMessage = await currentMessage.edit(text_field.value, newFiles, branch) // Передати зміни серверу, щоб видалити файли
                     currentMessage = newMessage || currentMessage
-                    console.log(newMessage)
-                    console.log(currentMessage)
                     
                     if (branch){
                         parentMessage = newMessage
@@ -566,7 +555,6 @@ async function sendMessage() {
                         }
                         
                         let fdata = Object.fromEntries(formData)
-                        console.log(fdata)
                         let [data, ai_response] = await requestAi(formData)
                         //Assign user message ID
                         if (data.userMessageId !== undefined){
@@ -586,9 +574,6 @@ async function sendMessage() {
                         else{
                             console.error("No id given to user message ", data)
                         }
-                    }
-                    else{
-                        console.log(currentMessage)
                     }
                 }
                 // else if(event.key === 'Escape'){}
@@ -783,7 +768,6 @@ userInput.addEventListener('paste', (e) => {
     // Шукаємо серед скопійованих елементів саме зображення
     for (let i = 0; i < items.length; i++) {
         if (items[i].kind.indexOf('file') !== -1) {
-            console.log(items[i])
             loadFile(items[i].getAsFile())
         }
     }
@@ -859,11 +843,10 @@ async function saveSettingsData(){
     new_stngs["top_k"] = parseFloat(top_k.value) || 0
     new_stngs["top_p"] = parseFloat(top_p.value) || 0
     if (JSON.stringify(new_stngs) !== JSON.stringify(settings_data) || !settings_fetched){
-        console.log(settings_data)
         const response = await fetch(`http://127.0.0.1:5000/api/chat/settings`, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json' // <--- Оце обов'язково для JSON
+                'Content-Type': 'application/json'
             },
             body: JSON.stringify(new_stngs)
         });
@@ -884,7 +867,6 @@ settings_btn.addEventListener('click', (e)=>{
 let mouse_down_target
 
 flex_cont.addEventListener('click', async (e)=>{
-    console.log(mouse_down_target, e.target.classList)
     if (mouse_down_target === e.target && e.target.classList.contains("close-trigger")){
         flex_cont.style.visibility = "hidden"
         flex_cont.style["backdrop-filter"] = "blur(0)"
@@ -976,7 +958,6 @@ function adjustImageSize() {
 document.querySelector("body").addEventListener('click', (e)=>{
     let target = e.target.classList.contains("open-image") ? e.target : e.target.closest(".open-image")
     if (target && !e.target.classList.contains("remove-file-btn")){
-        console.log(target, target.classList)
         let image = target.style["background-image"].replaceAll('url("', "").replaceAll('")', "")
         modal_image.src = image
         adjustImageSize()
