@@ -453,6 +453,10 @@ async function sendMessage() {
             const element = button.closest('.file');
             filesToRemove.push(element)
             element.style.display = 'none'
+            if (!Array.from(element.parentElement.children).some(node => { console.log(node.style.display !== "none", node); return node.style.display !== "none"})) {
+                messageContainer.style.paddingTop = "0"
+                messageFileContainer.style.display = 'none'
+            }
         }
         Array.from(messageFileContainer.getElementsByClassName('file')).forEach(element => {
             let button = element.querySelector('.remove-file-btn')
@@ -924,10 +928,11 @@ function adjustImageSize() {
 
 
 document.querySelector("body").addEventListener('click', (e)=>{
-    if (e.target.classList.contains("open-image")){
-        let image = e.target.style["background-image"].replaceAll('url("', "").replaceAll('")', "")
+    let target = e.target.classList.contains("open-image") ? e.target : e.target.closest(".open-image")
+    if (target && !e.target.classList.contains("remove-file-btn")){
+        console.log(target, target.classList)
+        let image = target.style["background-image"].replaceAll('url("', "").replaceAll('")', "")
         modal_image.src = image
-        console.log(e.target, image)
         adjustImageSize()
         flex_cont.style.visibility = "visible"
         flex_cont.style["backdrop-filter"] = "blur(2px)"
