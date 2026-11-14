@@ -193,7 +193,7 @@ async function requestAi(formData){
     {
         reply = marked.parse(data.reply)
     
-        // 3. Відображаємо відповідь від ШІ
+        // Display AI response
         let template = aiMsgTmp.content.cloneNode(true)
         let messageContainer = template.querySelector('.ai-answer')
         let textBox = messageContainer.querySelector('.chat-message')
@@ -226,7 +226,6 @@ async function requestAi(formData){
             textBox.innerHTML = ""
             editBtn.style.display = "none"
     
-            //Array.from(textBox.childNodes).filter(node => node.nodeType === Node.TEXT_NODE).map(node => node.textContent).join(" ")
             let rawText = ai_response.rawText
     
             //Create text field
@@ -272,13 +271,15 @@ async function requestAi(formData){
     
         let reroll = template.querySelector('.reroll')
         reroll.addEventListener('click', async event => {
-            //Check id
             editEvents.dispatchEvent(new CustomEvent('stopEdit', {detail: {obj: undefined}}))
+
+            //Check id
             if (ai_response.id === undefined)
             {
                 console.log("This message doesn't have an id! It can't be edited")
                 return
             }
+
             let response = await fetch(`http://127.0.0.1:5000/api/chat/reroll/${ai_response.id}`, {
                 method: 'POST'
             });
@@ -309,12 +310,11 @@ async function requestAi(formData){
             if (previousMessage.nextMessage.length <= 1) return
             let oldMsg = previousMessage.currentNextMessage
             let oldMsgID = previousMessage.nextMessage.indexOf(oldMsg)
-            if (oldMsgID <= 0) return                                       //change me
+            if (oldMsgID <= 0) return
             
-            let newMsg = previousMessage.nextMessage[oldMsgID-1]            //change me
+            let newMsg = previousMessage.nextMessage[oldMsgID-1]
             previousMessage.currentNextMessage = newMsg
             textBox.innerHTML = newMsg.text
-            // lastMessage = newMsg
             
             updateCounter(oldMsg, newMsg, navigationDiv)
         })
@@ -325,9 +325,9 @@ async function requestAi(formData){
             if (previousMessage.nextMessage.length <= 1) return
             let oldMsg = previousMessage.currentNextMessage
             let oldMsgID = previousMessage.nextMessage.indexOf(oldMsg)
-            if (oldMsgID >= previousMessage.nextMessage.length-1) return    //change me
+            if (oldMsgID >= previousMessage.nextMessage.length-1) return
             
-            let newMsg = previousMessage.nextMessage[oldMsgID+1]            //change me
+            let newMsg = previousMessage.nextMessage[oldMsgID+1]
             previousMessage.currentNextMessage = newMsg
             textBox.innerHTML = newMsg.text
             // lastMessage = newMsg
@@ -345,12 +345,12 @@ async function requestAi(formData){
     }
 }
 
-// Головна функція відправки повідомлення
+// Main function for sending a user message 
 async function sendMessage() {
     const text = userInput.value.trim();
-    if (!text && userFiles.length == 0) return; // Якщо поле порожнє — нічого не робимо
+    if (!text && userFiles.length == 0) return; // don't send if field is empty and no files attached
 
-    // 1. Відображаємо текст користувача в чаті
+    // 1. Display user messgae in the chat window
     let messageBox = userMsgTmp.content.cloneNode(true);
     let messageContainer = messageBox.querySelector('.user-message');
     let textBox = messageContainer.querySelector('.chat-message')
@@ -363,9 +363,9 @@ async function sendMessage() {
 
     textBox.append(text)
     chatWindow.append(messageBox) 
-    userInput.value = ''; // Очищаємо поле введення
+    userInput.value = '';
     userInput.rows = 1
-    chatWindow.scrollTop = chatWindow.scrollHeight; // Скролимо вниз
+    chatWindow.scrollTop = chatWindow.scrollHeight; // Scroll to the bottom
     sendBtn.dataset.active = "false";
 
     Array.from(filesContainer.getElementsByClassName('file')).map(node => node.remove());
@@ -418,7 +418,7 @@ async function sendMessage() {
         message_Obj.previousMessage = previousMessage
     }
 
-    //Edit Button Setup (client)
+    //Edit Button Handler (user)
     editBtn.addEventListener('click', (event) => {
         let text_field = turnToTextField(message_Obj.obj.querySelector(".chat-message"))
         let currentMessage = message_Obj.previousMessage.currentNextMessage
@@ -513,7 +513,7 @@ async function sendMessage() {
                     let branch = event.ctrlKey //If ctrl is pressed - create a new branch
                     text_field.disabled = true;
                     
-                    //Delete removed files
+                    // Clean up files removed during editing
                     let newFiles = [...currentMessage.files]
                     Array.from(messageFileContainer.getElementsByClassName('file')).forEach(element => {
                         if (element.style.display === 'none'){
@@ -533,7 +533,7 @@ async function sendMessage() {
                     });
 
                     filesToAdd.forEach(file => {newFiles.push(file)});
-                    let newMessage = await currentMessage.edit(text_field.value, newFiles, branch) // Передати зміни серверу, щоб видалити файли
+                    let newMessage = await currentMessage.edit(text_field.value, newFiles, branch)
                     currentMessage = newMessage || currentMessage
                     
                     if (branch){
@@ -543,10 +543,10 @@ async function sendMessage() {
                         newMessage.previousMessage.currentNextMessage = newMessage
                         updateCounter(oldMessage, newMessage, navigationDiv)
                         
-                        let formData = new FormData() //a flat key-value Json container that also accepts binary stuff (aka files)
+                        let formData = new FormData()
                         formData.append('message', newMessage.text)
                         if (newMessage.previousMessage.id){
-                            formData.append('parentId', newMessage.previousMessage.id)//parent id
+                            formData.append('parentId', newMessage.previousMessage.id)//parent message id
                         }
                         if (newMessage.files && newMessage.files.length > 0){
                             for (i = 0; i < newMessage.files.length; i++){
@@ -590,9 +590,9 @@ async function sendMessage() {
         if (previousMessage.nextMessage.length <= 1) return
         let oldMsg = previousMessage.currentNextMessage
         let oldMsgID = previousMessage.nextMessage.indexOf(oldMsg)
-        if (oldMsgID <= 0) return                                       //change me
+        if (oldMsgID <= 0) return
         
-        let newMsg = previousMessage.nextMessage[oldMsgID-1]            //change me
+        let newMsg = previousMessage.nextMessage[oldMsgID-1]
         previousMessage.currentNextMessage = newMsg
         textBox.innerHTML = newMsg.text
         // lastMessage = newMsg
@@ -606,9 +606,9 @@ async function sendMessage() {
         if (previousMessage.nextMessage.length <= 1) return
         let oldMsg = previousMessage.currentNextMessage
         let oldMsgID = previousMessage.nextMessage.indexOf(oldMsg)
-        if (oldMsgID >= previousMessage.nextMessage.length-1) return    //change me
+        if (oldMsgID >= previousMessage.nextMessage.length-1) return
         
-        let newMsg = previousMessage.nextMessage[oldMsgID+1]            //change me
+        let newMsg = previousMessage.nextMessage[oldMsgID+1]
         previousMessage.currentNextMessage = newMsg
         textBox.innerHTML = newMsg.text
         // lastMessage = newMsg
@@ -616,7 +616,7 @@ async function sendMessage() {
         updateCounter(oldMsg, newMsg, navigationDiv)
     })
 
-    // 2. Надсилаємо запит на наш Python-бекенд (PROMPT)
+    // 2. Fetch requesrt to Python-backend (PROMPT)
     try {
         let [data, ai_response] = await requestAi(formData)
         if (!data.error){
@@ -663,14 +663,37 @@ async function sendMessage() {
         errorDiv.style.marginBottom = "10px"
         errorDiv.innerHTML = "<b>Помилка:</b> Не вдалося з'єднатися з бекендом</div>"
         chatWindow.append(errorDiv);
-        chatWindow.scrollTop = chatWindow.scrollHeight; // Скролимо вниз
+        chatWindow.scrollTop = chatWindow.scrollHeight; // Scroll down
         console.log(error)
     }
 
     userFiles = []
 }
 
-//Clear Button
+sendBtn.addEventListener('click', sendMessage);
+userInput.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter' && !event.shiftKey) {
+        event.preventDefault();
+        sendMessage();
+    }
+});
+
+userInput.addEventListener('input', event => {
+    userInput.rows = 1;
+    const computedStyle = window.getComputedStyle(userInput);
+    const lineHeight = parseInt(computedStyle.lineHeight); 
+    const totalHeight = userInput.scrollHeight - (parseInt(computedStyle.paddingTop) || 0) - (parseInt(computedStyle.paddingBottom) || 0);
+    const currentLines = Math.floor(totalHeight / lineHeight);
+    userInput.rows = Math.min(currentLines, 5);
+    userInput.scrollTop = userInput.scrollHeight;
+    
+    const text = userInput.value.trim();
+    if (!text) sendBtn.dataset.active = "false";
+    else sendBtn.dataset.active = "true";
+});
+
+
+//Clear Button - clears the whole conversation, both backend and frontend. Doesn't affect settings
 clearBtn.addEventListener('click', () => {
     chatWindow.innerHTML = ``;
     lastMessage = null
@@ -708,40 +731,15 @@ function loadFile(file){
     else{
         fileDiv.classList.remove("open-image")
     }
-    //URL.revokeObjectURL(imageURL);
 }
 
-//File Input
+//File Input Button
 inputFileBtn.addEventListener('change', () => {
     const selectedFiles = inputFileBtn.files;
     for (i = 0;  i < selectedFiles.length; i++){
         loadFile(selectedFiles[i])
     }
 })
-// Подія 1: Клік по кнопці "Надіслати"
-sendBtn.addEventListener('click', sendMessage);
-
-// Подія 2: Натискання клавіші в інпуті
-userInput.addEventListener('keydown', (event) => {
-    if (event.key === 'Enter' && !event.shiftKey) {
-        event.preventDefault();
-        sendMessage();
-    }
-});
-userInput.addEventListener('input', event => {
-    userInput.rows = 1;
-    const computedStyle = window.getComputedStyle(userInput);
-    const lineHeight = parseInt(computedStyle.lineHeight); 
-    const totalHeight = userInput.scrollHeight - (parseInt(computedStyle.paddingTop) || 0) - (parseInt(computedStyle.paddingBottom) || 0);
-    const currentLines = Math.floor(totalHeight / lineHeight);
-    userInput.rows = Math.min(currentLines, 5);
-    userInput.scrollTop = userInput.scrollHeight;
-    
-    const text = userInput.value.trim();
-    if (!text) sendBtn.dataset.active = "false";
-    else sendBtn.dataset.active = "true";
-});
-
 
 const fileData = new WeakMap();
 function fitText(element) {
@@ -761,11 +759,11 @@ function fitText(element) {
 }
 
 userInput.addEventListener('paste', (e) => {
-    // Отримуємо елементи з буфера обміну
+    // Get clipboard data
     const items = (e.clipboardData || window.clipboardData).items;
     if (!items) return;
 
-    // Шукаємо серед скопійованих елементів саме зображення
+    // Check for files in clipboard
     for (let i = 0; i < items.length; i++) {
         if (items[i].kind.indexOf('file') !== -1) {
             loadFile(items[i].getAsFile())
@@ -779,6 +777,8 @@ userInput.addEventListener('paste', (e) => {
 
 
 //SETTINGS
+
+//elements
 let flex_cont = document.querySelector(".flex-container")
 let settings_menu = flex_cont.querySelector("#settings")
 let close_btn = settings_menu.querySelector(".close-btn")
@@ -799,6 +799,7 @@ let top_k = settings_menu.querySelector("#top_k")
 let temperature_slider = settings_menu.querySelector(".temperature.range-value")
 let top_p_slider = settings_menu.querySelector(".top_p.range-value")
 
+
 let defaultSettings  = {
     modelName: "instruct-abliterated",
     num_ctx: 8192,
@@ -808,7 +809,9 @@ let defaultSettings  = {
     top_k: 50,
 }
 let settings_data = JSON.parse(localStorage.getItem("settings")) || defaultSettings
-let settings_fetched = false
+let settings_fetched = false //untill true will fetch settings on every menu close, regardless of changes 
+
+//initial fetch
 try{
     fetch(`http://127.0.0.1:5000/api/chat/settings`, {
         method: 'POST',
@@ -824,6 +827,7 @@ catch(err){
 }
 console.log(settings_data)
 
+//display new settings
 model_options.value = settings_data["modelName"]
 num_ctx.value = settings_data["num_ctx"]
 num_predict.value = settings_data["num_predict"]
@@ -837,7 +841,7 @@ top_p_slider.value = settings_data["top_p"]
 async function saveSettingsData(){
     let new_stngs = {}
     new_stngs["modelName"] = model_options.value
-    new_stngs["num_ctx"] = parseFloat(num_ctx.value) || 0
+    new_stngs["num_ctx"] = parseFloat(num_ctx.value) || 0 //avoid NaN
     new_stngs["num_predict"] = parseFloat(num_predict.value) || 0
     new_stngs["temperature"] = parseFloat(temperature.value) || 0
     new_stngs["top_k"] = parseFloat(top_k.value) || 0
@@ -857,17 +861,17 @@ async function saveSettingsData(){
     localStorage.setItem("settings", JSON.stringify(settings_data))
 }
 
+//Open settings menu
 settings_btn.addEventListener('click', (e)=>{
     flex_cont.style.visibility = "visible"
     flex_cont.style["backdrop-filter"] = "blur(2px)"
-    settings_menu.style.transform = "translate(0, 0)"
+    settings_menu.style.transform = "translate(0, 0)" //animation
     flex_cont.style["z-index"] = "4"
 })
 
-let mouse_down_target
-
+let mouse_down_target //check if mouse down and mouse up were on the same element
 flex_cont.addEventListener('click', async (e)=>{
-    if (mouse_down_target === e.target && e.target.classList.contains("close-trigger")){
+    if (mouse_down_target === e.target && e.target.classList.contains("close-trigger")){ //only for certain elements (flex-cont and close-btn)
         flex_cont.style.visibility = "hidden"
         flex_cont.style["backdrop-filter"] = "blur(0)"
         settings_menu.style.transform = "translate(0, 100vh)"
@@ -885,6 +889,7 @@ flex_cont.addEventListener('mousedown', async (e)=>{
     }
 })
 
+//Sync sliders and input fields
 top_p_slider.addEventListener("input", (e)=>{
     top_p.value = parseFloat(top_p_slider.value).toFixed(2)
 })
@@ -917,7 +922,7 @@ temperature.addEventListener("focus", (e)=>{
     temperature.setSelectionRange(0, temperature.value.length);
 })
 
-
+//avoid NaN in input fields
 num_ctx.addEventListener("blur", (e)=>{
     num_ctx.value = parseInt(num_ctx.value) || 0
 })
@@ -929,27 +934,24 @@ top_k.addEventListener("blur", (e)=>{
 })
 
 
-//Image modal window
+//IMAGE MODAL WINDOW
+
+//Fix image border size
 function adjustImageSize() {
     const img = modal_image;
     const container = modal_image.parentElement;
 
-    // Отримуємо реальні розміри картинки
     const naturalWidth = img.naturalWidth;
     const naturalHeight = img.naturalHeight;
 
-    // Отримуємо поточні розміри контейнера
     const containerWidth = container.clientWidth;
     const containerHeight = container.clientHeight;
 
-    // Раховуємо коефіцієнт масштабування (як у contain)
     const scale = Math.min(containerWidth / naturalWidth, containerHeight / naturalHeight);
 
-    // Кінцеві розміри картинки
     const displayWidth = naturalWidth * scale;
     const displayHeight = naturalHeight * scale;
 
-    // Примусово задаємо їх тегу img — тепер рамка ляже ідеально навколо картинки!
     img.style.width = `${displayWidth}px`;
     img.style.height = `${displayHeight}px`;
 }
@@ -969,3 +971,4 @@ document.querySelector("body").addEventListener('click', (e)=>{
     }
 })
 
+window.addEventListener('resize', (e)=>{if (modal_cont.style.visibility === "visible") adjustImageSize()})
