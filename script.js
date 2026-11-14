@@ -45,12 +45,13 @@ class UserMessage {
             console.log("This message doesn`t have an id! It can`t be edited")
             return
         }
-
+        
+        console.log(newFiles)
         let formData = new FormData()
         formData.append('message', newText)
         formData.append('role', "user")
-        if (this.files)
-            this.files.forEach(file => {
+        if (newFiles)
+            newFiles.forEach(file => {
                 formData.append('files', file); // тут можна змінити ключ, якщо потрібно
             });
             console.log(formData)
@@ -67,12 +68,12 @@ class UserMessage {
                 clone.nextMessage = []
                 clone.text = newText
                 clone.id = data.newId
-                console.log(clone.files, newFiles)
                 clone.files = newFiles
                 return clone
             }
             else{
                 this.text = newText
+                this.files = newFiles
             }
         }
         catch (error){
@@ -427,7 +428,7 @@ async function sendMessage() {
     editBtn.addEventListener('click', (event) => {
         let text_field = turnToTextField(message_Obj.obj.querySelector(".chat-message"))
         let currentMessage = message_Obj.previousMessage.currentNextMessage
-        let filesToRemove = []
+        let filesToAdd = []
         editBtn.style.display = "none"
         
         function stopEdit(event = undefined){
@@ -438,11 +439,25 @@ async function sendMessage() {
                 editEvents.removeEventListener('stopEdit', stopEdit)
 
                 Array.from(messageFileContainer.getElementsByClassName('file')).forEach(element => {
-                    let button = element.querySelector('.remove-file-btn')
-                    button.style.visibility = 'hidden'
-                    button.removeEventListener('click', removeFile)
-                    element.style.display === 'flex'
+                    if (currentMessage.files.includes(element.savedFile)){
+                        let button = element.querySelector('.remove-file-btn')
+                        button.style.visibility = 'hidden'
+                        button.removeEventListener('click', removeFile)
+                        element.style.display === 'flex'
+                    }
+                    else{
+                        console.log(currentMessage.files.includes(element.savedFile))
+                        console.log(currentMessage.files, element.savedFile)
+                        let button = element.querySelector('.remove-file-btn')
+                        button.removeEventListener('click', removeFile)
+                        element.remove();
+                    }
                 });
+
+                if (!Array.from(messageFileContainer.children).some(node => { console.log(node.style.display !== "none", node); return node.style.display !== "none"})) {
+                    messageContainer.style.paddingTop = "0"
+                    messageFileContainer.style.display = 'none'
+                }
             }
         }
 
@@ -451,7 +466,6 @@ async function sendMessage() {
         function removeFile(event) {
             const button = event.currentTarget;
             const element = button.closest('.file');
-            filesToRemove.push(element)
             element.style.display = 'none'
             if (!Array.from(element.parentElement.children).some(node => { console.log(node.style.display !== "none", node); return node.style.display !== "none"})) {
                 messageContainer.style.paddingTop = "0"
@@ -465,7 +479,37 @@ async function sendMessage() {
         });
 
         text_field.addEventListener("paste", (e)=>{
-            
+            const items = (e.clipboardData || window.clipboardData).items;
+            if (!items) return;
+
+            for (let i = 0; i < items.length; i++) {
+                if (items[i].kind.indexOf('file') !== -1) {
+                    file = items[i].getAsFile()
+
+                    messageContainer.style.paddingTop = "120px"
+                    messageFileContainer.style.display = 'flex'
+                    let template = document.getElementById("file-template").content.cloneNode(true)
+                    let fileDiv = template.querySelector('.file');
+                    let button = template.querySelector('.remove-file-btn')
+                    let text = template.querySelector('p')
+                 
+                    text.innerHTML = file.name
+                    fileDiv.savedFile = file
+                    messageFileWrapper.append(template)
+                    fitText(text)
+
+                    if (file.type.includes("image")){
+                        let imageURL = URL.createObjectURL(file)
+                        fileDiv.style.backgroundImage = `url(${imageURL})`
+                        file.imageURL = imageURL
+                    }
+                    else{
+                        fileDiv.classList.remove("open-image")
+                    }
+                    
+                    filesToAdd.push(file)
+                }
+            }
         })
 
         // Enter || escape conntection
@@ -479,8 +523,6 @@ async function sendMessage() {
                     
                     //Delete removed files
                     let newFiles = [...currentMessage.files]
-                    console.log(currentMessage.files)
-                    console.log(newFiles)
                     Array.from(messageFileContainer.getElementsByClassName('file')).forEach(element => {
                         if (element.style.display === 'none'){
                             let button = element.querySelector('.remove-file-btn')
@@ -497,8 +539,12 @@ async function sendMessage() {
                             element.remove();
                         }
                     });
+
+                    filesToAdd.forEach(file => {newFiles.push(file)});
+                    console.log(newFiles)
                     let newMessage = await currentMessage.edit(text_field.value, newFiles, branch) // Передати зміни серверу, щоб видалити файли
                     currentMessage = newMessage || currentMessage
+                    console.log(newMessage)
                     console.log(currentMessage)
                     
                     if (branch){
