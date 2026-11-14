@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <title>No Brains AI</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Rubik+Puddles&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="C:\Users\rokro\OneDrive\Документы\No Brains AI\styles.css">
+
+    <link rel="icon" href="C:\Users\rokro\OneDrive\Зображення\Avatars\Icon.png" type="image/x-icon">
+
+</head>
+
+
+
+<body>
+    <!--Templates-->
+    <template id="file-template">
+        <div class = "file open-image">
+            <p style="text-overflow: clip; white-space: nowrap; margin-block-end: 3%"></p>
+            <button class="remove-file-btn">X</button>
+        </div>
+    </template>
+
+    <template id="user-message-template">
+        <div class="message-container user-message">
+            <pre class="chat-message"></pre>
+            <div class="message-file-container">
+                <p class="files-label">Files</p>
+                <div class="message-file-wrapper">
+                </div>
+            </div>
+            <div class="action-buttons">
+                <button class="edit"><img src="Images\215568.png"></button>
+            </div>
+            <div class="navigation-buttons">
+                <button class="previous"><b>&#10094;</b></button>
+                <p class="counter">1/2</p>
+                <button class="next"><b>&#10095;</b></button>
+            </div>
+        </div>
+    </template>
+
+    <template id="ai-message-template">
+        <div class="ai-answer message-container">
+            <div class = "chat-message"></div>
+            <div class="action-buttons">
+                <button class="edit"><img src="Images\215568.png"></button>
+                <button class="copy"><img src="Images/361082-200.png"></button>
+                <button class="reroll"><img src="Images/44650.png"></button>
+            </div>
+            <div class="navigation-buttons">
+                <button class="previous"><b>&#10094;</b></button>
+                <p class="counter">1/2</p>
+                <button class="next"><b>&#10095;</b></button>
+            </div>
+        </div>
+    </template>
+
+
+
+
+    <!--Actual Page Body-->
+    <h1 style="text-align: center; user-select: none; font-weight:bold; font-size: 70px; font-family: 'Rubik Puddles'; white-space: pre; margin: 25px 0 22px 0;">No  Brains  AI</h1>
+    
+    <!-- Вікно, де відображаються відповіді -->
+    <div id="chat-window">
+        <!-- Messages go here-->
+        <div class="message-container user-message"> <!--Padding top 120px-->
+        </div>
+    </div>
+    <button class="clear-btn" id="clear-btn">Clear</button>
+
+    <!-- Зона введення -->
+    <div id="container" style="background-color: #e5e5e5; border-radius: 20px; padding: 10px; border: 1px; border-color: #ccc; border-style: solid">
+        <div id="files-container">
+            <!--Put file container here-->
+        </div>
+        <div id="input-container">
+            <input type="file" id="file-btn" multiple="true" style="width: 0; height: 0; padding: 0; margin: 0;">
+            <label for="file-btn", style="user-select:none; border-radius:100%; height: 40px; width: 40px; padding: 0%; cursor: pointer;background:none; border: none; color: #ccc;font-size: 40px;">+</label>
+            <textarea id="user-input" style="user-select: none;" placeholder="Напишіть щось ШІ..." rows="1"></textarea>
+            <button id="send-btn" style="border: 0.5px solid #b4b4b4">↑</button>
+        </div>
+    </div>
+
+
+    <!--BLUR-->
+    <div class="flex-container close-trigger">
+        <!--MODAL IMAGE-->
+        <div id="modal-container" class="close-trigger" style="visibility: hidden; position: absolute; width: 80vw; height: 80vh; display: flex; justify-content: center; align-items: center; padding: 10px;">
+            <img class="modal-image" src="" alt="" style="border: 5px black solid; border-radius: 10px; object-fit: contain;">
+        </div>
+        
+        <!--SETTINGS-->
+        <div id="settings">
+            <div class="top-bar">
+                <p class="title">Model Settings</p>
+                <div class="close-btn close-trigger">X</div>
+            </div>
+            <hr >
+            
+            <div class = "settings-container">
+                <div class="setting-row">
+                    <div class="setting-name">Model</div>
+                    <select name="Model" id="model-select">
+                        <option value="instruct-abliterated">instruct-abliterated</option>
+                        <option value="gemma3:12b">gemma3:12b</option>
+                        <option value="qwen3.5:9b">qwen3.5:9b</option>
+                        <option value="moondream">moondream</option>
+                    </select>
+                </div>
+                <div class="setting-row">
+                    <div class="setting-name">Context Length</div>
+                    <input type="text" placeholder="0" value="8192" class="number-value" id="num_ctx">
+                </div>
+
+                <div class="setting-row">
+                    <div class="setting-name">Max Output Tokens</div>
+                    <input type="text" placeholder="0" value="1024" class="number-value" id="num_predict">
+                </div>
+
+                <div class="setting-row">
+                    <div class="setting-name">Temperature</div>
+                    <input type="range" max="2" min="0" value="1" step="0.1" class="temperature range-value">
+                    <input type="text" value="1"class="range-number-input temperature" id="temperature">
+                </div>
+
+                <div class="setting-row">
+                    <div class="setting-name">Nucleus Sampling (top_p)</div>
+                    <input type="range" max="1" min="0" value="0.95" step="0.05" class="range-value top_p" style="margin-left: auto; width: 25%; text-align: right; accent-color: #313641; cursor: pointer;">
+                    <input type="text" max="1" min="0" value="0.95" class="range-number-input top_p" id="top_p">
+                </div>
+
+                <div class="setting-row">
+                    <div class="setting-name">Sample Pool (top_k)</div>
+                    <input type="text" placeholder="0" value="50" class="number-value small-number-value" id="top_k">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="settings-btn">
+        <img src="Images\3524659.png" alt="Settings">
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="Untitled-1.js"></script>
+</body>
+</html>
