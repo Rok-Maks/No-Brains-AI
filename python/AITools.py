@@ -71,5 +71,5 @@ def execute_python_code(code: str) -> str:
 from datetime import datetime
 
 def get_current_timestamp() -> str:
-    """Повертає поточну дату і час у вигляді відформатованого рядка."""
+    """Returns the current date and time as a formatted string."""
     return datetime.now().strftime("%d-%m-%Y %H:%M:%S")

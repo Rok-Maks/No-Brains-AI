@@ -208,6 +208,10 @@ button {
     align-self: flex-end;
 }
 
+.user-message .chat-message{
+    padding: 0.5em
+}
+
 
 .edit-box {
     width: auto;
@@ -581,4 +585,19 @@ code {
 .modal-image{
     transform: scale(0.1);
     transition: transform .2s ease-in-out, visibility .2s;
+}
+
+
+.loader .dot{
+    animation: blink 1.4s infinite both;
+}
+
+.loader .dot:nth-child(1) { animation-delay: 0s; }
+.loader .dot:nth-child(2) { animation-delay: 0.2s; }
+.loader .dot:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes blink {
+  0% { opacity: 0.2; }
+  20% { opacity: .8; }
+  100% { opacity: 0.2; }
 }

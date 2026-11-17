@@ -24,6 +24,15 @@ function arraysEqual(a, b){
 function clamp(num, min=0, max){
     return Math.min(Math.max(num, min), max);   
 }
+function addLoader(){
+    const loadingDiv = document.createElement('div');
+    loadingDiv.style.marginBottom = "10px"
+    loadingDiv.className = 'loader';
+    loadingDiv.innerHTML = '<b>Loading<span class="dot">.</span><span class="dot">.</span><span class="dot">.</span></b>'
+    chatWindow.append(loadingDiv);
+    return loadingDiv
+}
+
 class UserMessage {
     constructor(obj, text = "", files) {
         this.obj = obj
@@ -183,167 +192,175 @@ function updateCounter(oldMsg, newMsg, navigationDiv){
 
 async function requestAi(formData){
     console.log(formData) 
-    const response = await fetch('http://127.0.0.1:5000/api/chat/prompt', {
-        method: 'POST',
-        body: formData 
-    });
-    
-    data = await response.json();
-    if (!data.error)
-    {
-        reply = marked.parse(data.reply)
-    
-        // Display AI response
-        let template = aiMsgTmp.content.cloneNode(true)
-        let messageContainer = template.querySelector('.ai-answer')
-        let textBox = messageContainer.querySelector('.chat-message')
-        let navigationDiv = messageContainer.querySelector('.navigation-buttons')
-        let previous = navigationDiv.querySelector('.previous')
-        let next = navigationDiv.querySelector('.next')
-        textBox.innerHTML = reply;
-    
-        const copy = template.querySelector('.copy')
-        copy.addEventListener('click', (event) => {
-            const text = textBox.innerText.slice(4);
-            navigator.clipboard.writeText(text);
-        })
-    
-        let ai_response = new AIMessage(messageContainer, reply, data.reply)
-    
-        //Edit button (AI side)
-        let editBtn = template.querySelector('.edit')
-        editBtn.addEventListener('click', (event) => {
-            //Check id
-            if (ai_response.id === undefined)
-            {
-                console.log("This message doesn't have an id! It can't be edited")
-                return
-            }
-
-            editEvents.dispatchEvent(new CustomEvent('stopEdit', {detail: {obj: ai_response}}))
-    
-            // Hide text, show inputField
-            textBox.innerHTML = ""
-            editBtn.style.display = "none"
-    
-            let rawText = ai_response.rawText
-    
-            //Create text field
-            let text_field = document.createElement("textarea")
-            text_field.className = "edit-box"
-            text_field.value = rawText
-            text_field.placeholder = "Write something..."
-            textBox.append(text_field)
-            text_field.focus()
-            text_field.setSelectionRange(rawText.length, rawText.length);
-
-            function stopEdit(event){
-                if (event.detail.obj !== ai_response){
-                    textBox.innerHTML = marked.parse(ai_response.rawText)
-                    ai_response.text = marked.parse(ai_response.rawText)
-                    text_field.remove()
-                    editBtn.style.display = "flex"
-                    editEvents.removeEventListener('stopEdit', stopEdit)
-                }
-            }
-            
-            // Enter || escape conntection (AI Side)
-            text_field.addEventListener('keydown', async (event) => {
-                if ((event.key === 'Enter' && !event.shiftKey) || event.key === 'Escape') {
-                    event.preventDefault();
-                    editEvents.removeEventListener('stopEdit', stopEdit)
-                    if (event.key === 'Enter') {
-                        text_field.disabled = true;
-                        await ai_response.edit(text_field.value);
-                    }
-                    
-                    textBox.innerHTML = marked.parse(ai_response.rawText)
-                    ai_response.text = marked.parse(ai_response.rawText)
-                    text_field.remove()
-                    editBtn.style.display = "flex"
-                }
-            })
-
-
-
-            editEvents.addEventListener('stopEdit', stopEdit)
-        })
-    
-        let reroll = template.querySelector('.reroll')
-        reroll.addEventListener('click', async event => {
-            editEvents.dispatchEvent(new CustomEvent('stopEdit', {detail: {obj: undefined}}))
-
-            //Check id
-            if (ai_response.id === undefined)
-            {
-                console.log("This message doesn't have an id! It can't be edited")
-                return
-            }
-
-            let response = await fetch(`http://127.0.0.1:5000/api/chat/reroll/${ai_response.id}`, {
-                method: 'POST'
-            });
-            data = await response.json();
-            if (data.error){
-                console.log(data.error)
-                return
-            }
-            let reply = marked.parse(data.reply)
-            let newId = data.newId
+    let loader = addLoader(chatWindow)
+    try{
+        const response = await fetch('http://127.0.0.1:5000/api/chat/prompt', {
+            method: 'POST',
+            body: formData 
+        });
+        
+        data = await response.json();
+        if (!data.error)
+        {
+            reply = marked.parse(data.reply)
+        
+            // Display AI response
+            let template = aiMsgTmp.content.cloneNode(true)
+            let messageContainer = template.querySelector('.ai-answer')
+            let textBox = messageContainer.querySelector('.chat-message')
+            let navigationDiv = messageContainer.querySelector('.navigation-buttons')
+            let previous = navigationDiv.querySelector('.previous')
+            let next = navigationDiv.querySelector('.next')
             textBox.innerHTML = reply;
-    
-            let newMessage = ai_response.clone()
-            newMessage.nextMessage = []
-            newMessage.text = reply
-            newMessage.rawText = data.reply
-            newMessage.id = newId
-            lastMessage = newMessage
-            let oldMessage = newMessage.previousMessage.currentNextMessage
-            newMessage.previousMessage.nextMessage.push(newMessage)
-            newMessage.previousMessage.currentNextMessage = newMessage
-            updateCounter(oldMessage, newMessage, navigationDiv)
-        })
-    
-        previous.addEventListener('click', (event) => {
-            editEvents.dispatchEvent(new CustomEvent('stopEdit', {detail: {obj: undefined}}))
-            let previousMessage = ai_response.previousMessage
-            if (previousMessage.nextMessage.length <= 1) return
-            let oldMsg = previousMessage.currentNextMessage
-            let oldMsgID = previousMessage.nextMessage.indexOf(oldMsg)
-            if (oldMsgID <= 0) return
-            
-            let newMsg = previousMessage.nextMessage[oldMsgID-1]
-            previousMessage.currentNextMessage = newMsg
-            textBox.innerHTML = newMsg.text
-            
-            updateCounter(oldMsg, newMsg, navigationDiv)
-        })
-    
-        next.addEventListener('click', (event) => {
-            editEvents.dispatchEvent(new CustomEvent('stopEdit', {detail: {obj: undefined}}))
-            let previousMessage = ai_response.previousMessage
-            if (previousMessage.nextMessage.length <= 1) return
-            let oldMsg = previousMessage.currentNextMessage
-            let oldMsgID = previousMessage.nextMessage.indexOf(oldMsg)
-            if (oldMsgID >= previousMessage.nextMessage.length-1) return
-            
-            let newMsg = previousMessage.nextMessage[oldMsgID+1]
-            previousMessage.currentNextMessage = newMsg
-            textBox.innerHTML = newMsg.text
-            // lastMessage = newMsg
-            
-            updateCounter(oldMsg, newMsg, navigationDiv)
-        })
-    
-        chatWindow.append(template);
-        chatWindow.scrollTop = chatWindow.scrollHeight;
-        return [data, ai_response]
+        
+            const copy = template.querySelector('.copy')
+            copy.addEventListener('click', (event) => {
+                const text = textBox.innerText.slice(4);
+                navigator.clipboard.writeText(text);
+            })
+        
+            let ai_response = new AIMessage(messageContainer, reply, data.reply)
+        
+            //Edit button (AI side)
+            let editBtn = template.querySelector('.edit')
+            editBtn.addEventListener('click', (event) => {
+                //Check id
+                if (ai_response.id === undefined)
+                {
+                    console.log("This message doesn't have an id! It can't be edited")
+                    return
+                }
+
+                editEvents.dispatchEvent(new CustomEvent('stopEdit', {detail: {obj: ai_response}}))
+        
+                // Hide text, show inputField
+                textBox.innerHTML = ""
+                editBtn.style.display = "none"
+        
+                let rawText = ai_response.rawText
+        
+                //Create text field
+                let text_field = document.createElement("textarea")
+                text_field.className = "edit-box"
+                text_field.value = rawText
+                text_field.placeholder = "Write something..."
+                textBox.append(text_field)
+                text_field.focus()
+                text_field.setSelectionRange(rawText.length, rawText.length);
+
+                function stopEdit(event){
+                    if (event.detail.obj !== ai_response){
+                        textBox.innerHTML = marked.parse(ai_response.rawText)
+                        ai_response.text = marked.parse(ai_response.rawText)
+                        text_field.remove()
+                        editBtn.style.display = "flex"
+                        editEvents.removeEventListener('stopEdit', stopEdit)
+                    }
+                }
+                
+                // Enter || escape conntection (AI Side)
+                text_field.addEventListener('keydown', async (event) => {
+                    if ((event.key === 'Enter' && !event.shiftKey) || event.key === 'Escape') {
+                        event.preventDefault();
+                        editEvents.removeEventListener('stopEdit', stopEdit)
+                        if (event.key === 'Enter') {
+                            text_field.disabled = true;
+                            await ai_response.edit(text_field.value);
+                        }
+                        
+                        textBox.innerHTML = marked.parse(ai_response.rawText)
+                        ai_response.text = marked.parse(ai_response.rawText)
+                        text_field.remove()
+                        editBtn.style.display = "flex"
+                    }
+                })
+
+
+
+                editEvents.addEventListener('stopEdit', stopEdit)
+            })
+        
+            let reroll = template.querySelector('.reroll')
+            reroll.addEventListener('click', async event => {
+                editEvents.dispatchEvent(new CustomEvent('stopEdit', {detail: {obj: undefined}}))
+
+                //Check id
+                if (ai_response.id === undefined)
+                {
+                    console.log("This message doesn't have an id! It can't be edited")
+                    return
+                }
+
+                let response = await fetch(`http://127.0.0.1:5000/api/chat/reroll/${ai_response.id}`, {
+                    method: 'POST'
+                });
+                data = await response.json();
+                if (data.error){
+                    console.log(data.error)
+                    return
+                }
+                let reply = marked.parse(data.reply)
+                let newId = data.newId
+                textBox.innerHTML = reply;
+        
+                let newMessage = ai_response.clone()
+                newMessage.nextMessage = []
+                newMessage.text = reply
+                newMessage.rawText = data.reply
+                newMessage.id = newId
+                lastMessage = newMessage
+                let oldMessage = newMessage.previousMessage.currentNextMessage
+                newMessage.previousMessage.nextMessage.push(newMessage)
+                newMessage.previousMessage.currentNextMessage = newMessage
+                updateCounter(oldMessage, newMessage, navigationDiv)
+            })
+        
+            previous.addEventListener('click', (event) => {
+                editEvents.dispatchEvent(new CustomEvent('stopEdit', {detail: {obj: undefined}}))
+                let previousMessage = ai_response.previousMessage
+                if (previousMessage.nextMessage.length <= 1) return
+                let oldMsg = previousMessage.currentNextMessage
+                let oldMsgID = previousMessage.nextMessage.indexOf(oldMsg)
+                if (oldMsgID <= 0) return
+                
+                let newMsg = previousMessage.nextMessage[oldMsgID-1]
+                previousMessage.currentNextMessage = newMsg
+                textBox.innerHTML = newMsg.text
+                
+                updateCounter(oldMsg, newMsg, navigationDiv)
+            })
+        
+            next.addEventListener('click', (event) => {
+                editEvents.dispatchEvent(new CustomEvent('stopEdit', {detail: {obj: undefined}}))
+                let previousMessage = ai_response.previousMessage
+                if (previousMessage.nextMessage.length <= 1) return
+                let oldMsg = previousMessage.currentNextMessage
+                let oldMsgID = previousMessage.nextMessage.indexOf(oldMsg)
+                if (oldMsgID >= previousMessage.nextMessage.length-1) return
+                
+                let newMsg = previousMessage.nextMessage[oldMsgID+1]
+                previousMessage.currentNextMessage = newMsg
+                textBox.innerHTML = newMsg.text
+                // lastMessage = newMsg
+                
+                updateCounter(oldMsg, newMsg, navigationDiv)
+            })
+        
+            chatWindow.append(template);
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+            return [data, ai_response]
+        }
+        else{
+            console.log(data.error)
+            return [data, '']
+        }
     }
-    else{
-        console.log(data.error)
-        return [data, '']
+    finally{
+        loader.remove()
     }
 }
+
+
 
 // Main function for sending a user message 
 async function sendMessage() {
@@ -661,7 +678,7 @@ async function sendMessage() {
         const errorDiv = document.createElement('div');
         errorDiv.style.color = 'red'
         errorDiv.style.marginBottom = "10px"
-        errorDiv.innerHTML = "<b>Помилка:</b> Не вдалося з'єднатися з бекендом</div>"
+        errorDiv.innerHTML = "<b>Error:</b> Failed to connect to backend"
         chatWindow.append(errorDiv);
         chatWindow.scrollTop = chatWindow.scrollHeight; // Scroll down
         console.log(error)
