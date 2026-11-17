@@ -5,12 +5,10 @@ from sympy.parsing.sympy_parser import null
 
 from AIImportable import promptAI, clearHistory, editMessage, rerollMessage, set_settings
 
-#stop simultaneous editing
-
 rerollDebounce = {}
 promtDebounce = {}
 app = Flask(__name__)
-CORS(app)  # Дозволяємо запити з нашого індексу
+CORS(app)
 IMAGEFORMATS = ['.png', '.jpg', '.jpeg', '.webp']
 OTHERFORMATS = [
     "txt", "md", "markdown", "json", "jsonl", "xml", "yaml", "yml", "toml",
@@ -112,5 +110,4 @@ def clear():
 
 
 if __name__ == '__main__':
-    # Запускаємо сервер на 5000 порту
-    app.run(debug=True, port=5000)
+    app.run(debug=False, port=5000)
